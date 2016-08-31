@@ -16,6 +16,7 @@ public class Neuron {
 
     public Neuron() {
         weightVector = new double[0];
+        weightDeltaVector = new double[0];
         activationFunction = new Sigmoid();
     }
 
@@ -30,6 +31,7 @@ public class Neuron {
 
     public void setWeightCount(int count) {
         weightVector = new double[count];
+        weightDeltaVector = new double[count];
     }
 
     public int getWeightCount() {
@@ -44,8 +46,30 @@ public class Neuron {
         weightVector[index] = value;
     }
     
+    public double getWeightDeltaAt(int index){
+        return weightDeltaVector[index];
+    }
+    
+    public void setWeightDelta(int index, double value){
+        weightDeltaVector[index] = value;
+    }    
+    
     public double getOutput(){
         return output;
+    }
+    
+    /**
+     * Used by activation functions such as {@link Softmax} that have to 
+     * augment the output after taking global model information into account.
+     * 
+     * @param value 
+     */
+    public void setOutput(double value){
+        output = value;
+    }
+    
+    public Class getActivationFunction() {
+        return activationFunction.getClass();
     }
     
     /**
@@ -64,6 +88,7 @@ public class Neuron {
         }
         
         output = activationFunction.evaluate(aggregate(inputVector));
+        
         return output;
     }
 
@@ -95,7 +120,11 @@ public class Neuron {
 
     //the last position in the array is used to store the bias
     private double[] weightVector;
+    //used to accumulate weight changes until they are applied
+    private double[] weightDeltaVector;
     //store neuron output to facilitate some training algorithms
     private double output;
     private IFunction activationFunction;
+
+    
 }

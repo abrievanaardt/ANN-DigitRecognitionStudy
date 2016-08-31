@@ -1,11 +1,10 @@
 package ac.up.cos711.digitrecognitionstudy.neuralnet;
 
+import ac.up.cos711.digitrecognitionstudy.function.Softmax;
 import ac.up.cos711.digitrecognitionstudy.function.util.UnequalArgsDimensionException;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.util.FFNeuralNetConfig;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.util.UnequalInputWeightException;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Default implementation of an {@link IFFNeuralNet}.
@@ -39,7 +38,7 @@ public class FFNeuralNet implements IFFNeuralNet {
         //set output pattern length to number of neurons in this layer
         tempOutputPattern = new double[inputPattern.length];
 
-        //feed inputPattern individually to neurons in the input layer
+        //feed individual elements of inputPattern to neurons in the input layer
         for (int i = 0; i < inputPattern.length; i++) {
             tempOutputPattern[i] = layers[0][i].feed(inputPattern[i]);
         }
@@ -55,6 +54,15 @@ public class FFNeuralNet implements IFFNeuralNet {
                 tempOutputPattern[j] = layers[i][j].feed(tempInputPattern);
             }
             tempInputPattern = tempOutputPattern;
+        }
+        
+        //if Softmax was used in the output layer, update output neurons
+        if (layers[layers.length-1][0].getActivationFunction() == Softmax.class){
+            double sum = Arrays.stream(tempOutputPattern).sum();
+            for (int i = 0; i < tempOutputPattern.length; i++) {
+                tempOutputPattern[i] /= sum;
+                layers[layers.length-1][i].setOutput(tempOutputPattern[i]);
+            }
         }
         
         return tempOutputPattern;

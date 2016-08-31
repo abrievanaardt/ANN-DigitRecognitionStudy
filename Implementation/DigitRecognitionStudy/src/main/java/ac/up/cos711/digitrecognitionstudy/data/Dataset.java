@@ -2,11 +2,9 @@ package ac.up.cos711.digitrecognitionstudy.data;
 
 import ac.up.cos711.digitrecognitionstudy.data.util.IncorrectFileFormatException;
 import ac.up.cos711.digitrecognitionstudy.data.util.TrainingTestingTuple;
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -163,9 +161,6 @@ public class Dataset implements Iterable {
     }
 
     private static double scale(int input) {
-        int x;
-        if (input != 0)
-            x= 4;
         return (input / 255.0) * 2.0 - 1.0;
     }
 
@@ -180,7 +175,7 @@ public class Dataset implements Iterable {
     }
 
     private static final int TARGET_COUNT = 10;//10 digits to classify
-    private static final int HIDDEN_COUNT = 300;//todo: check references for optimal #input nodes
+    private static final int HIDDEN_COUNT = 10;//todo: check references for optimal #hidden nodes
     
     private List<Pattern> data = new ArrayList<>();
     private int inputCount;

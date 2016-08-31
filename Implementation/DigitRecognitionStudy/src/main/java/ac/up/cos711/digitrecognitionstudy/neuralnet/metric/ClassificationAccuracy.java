@@ -9,32 +9,32 @@ import ac.up.cos711.digitrecognitionstudy.neuralnet.util.UnequalInputWeightExcep
 import java.util.Iterator;
 
 /**
- * This class measures the % of incorrectly classified data patterns. The
+ * This class measures the % of correctly classified data patterns. The
  decision of whether a particular pattern belongs to any class is influenced
- by the THRESHOLD parameter. THRESHOLD should always be in the range [0, (Max_t
+ by the RIGOR parameter. RIGOR should always be in the range [0, (Max_t
  - Min_t)/2] => [0,0.4] in the case of 0.1 and 0.9 targets.
  *
  * @author Abrie van Aardt
  */
-public class ClassificationError implements INetworkError {
+public class ClassificationAccuracy implements INetworkError {
 
-    public ClassificationError() {
+    public ClassificationAccuracy() {
         RIGOR = 0.2;//this is within bounds
     }
 
-    public ClassificationError(double _threshold) throws ThresholdOutOfBoundsException {
+    public ClassificationAccuracy(double _threshold) throws ThresholdOutOfBoundsException {
         if (_threshold < 0 || _threshold > 0.4)
             throw new ThresholdOutOfBoundsException();
         RIGOR = _threshold;
     }
 
     /**
-     * Calculates the % of patterns that were not correctly classified by the
+     * Calculates the % of patterns that were correctly classified by the
      * network on the particular dataset.
      *
      * @param network
      * @param testingSet
-     * @return % of patterns incorrectly classified
+     * @return % of patterns correctly classified
      * @throws UnequalInputWeightException
      * @throws UnequalArgsDimensionException
      */
@@ -60,8 +60,7 @@ public class ClassificationError implements INetworkError {
                 ++correctClassCount;
         }
         
-        double percentage = (testingSet.size() - correctClassCount) 
-                / ((double) testingSet.size()) * 100.0;
+        double percentage = correctClassCount / ((double) testingSet.size()) * 100.0;
 
         return percentage;
     }

@@ -6,10 +6,11 @@ import ac.up.cos711.digitrecognitionstudy.data.util.StudyLogFormatter;
 import ac.up.cos711.digitrecognitionstudy.data.util.TrainingTestingTuple;
 import ac.up.cos711.digitrecognitionstudy.function.Identity;
 import ac.up.cos711.digitrecognitionstudy.function.Sigmoid;
+import ac.up.cos711.digitrecognitionstudy.function.Softmax;
 import ac.up.cos711.digitrecognitionstudy.function.util.NotAFunctionException;
 import ac.up.cos711.digitrecognitionstudy.function.util.UnequalArgsDimensionException;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.IFFNeuralNet;
-import ac.up.cos711.digitrecognitionstudy.neuralnet.metric.ClassificationError;
+import ac.up.cos711.digitrecognitionstudy.neuralnet.metric.ClassificationAccuracy;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.training.BackPropogation;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.util.FFNeuralNetBuilder;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.util.ThresholdOutOfBoundsException;
@@ -44,14 +45,14 @@ public class Test {
             IFFNeuralNet network = new FFNeuralNetBuilder()
                     .addLayer(trainingSet.getInputCount(), Identity.class)
                     .addLayer(trainingSet.getHiddenCount(), Sigmoid.class)
-                    .addLayer(trainingSet.getTargetCount(), Sigmoid.class)
+                    .addLayer(trainingSet.getTargetCount(), Softmax.class)
                     .build();
 
-            new BackPropogation(0.06, 0.04).train(network, trainingSet);
+            new BackPropogation(0.2, 0.0001, 1).train(network, trainingSet);
 
             Logger.getLogger(Test.class.getName()).log(Level.INFO, 
-                    "NN classification error is {0}%",
-                    new ClassificationError(0.2).measure(network, testingSet));
+                    "NN classification accuracy is {0}%",
+                    new ClassificationAccuracy(0.2).measure(network, testingSet));
 
         }
         catch (IOException | IncorrectFileFormatException 
