@@ -15,7 +15,8 @@ import ac.up.cos711.digitrecognitionstudy.function.IFunction;
 public class Neuron {
 
     public Neuron() {
-        weightVector = new double[0];
+        weightVector = new double[0];        
+        weightDeltaVector = new double[0];
         activationFunction = new Sigmoid();
     }
 
@@ -30,6 +31,7 @@ public class Neuron {
 
     public void setWeightCount(int count) {
         weightVector = new double[count];
+        weightDeltaVector = new double[count];
     }
 
     public int getWeightCount() {
@@ -43,6 +45,14 @@ public class Neuron {
     public void setWeight(int index, double value) {
         weightVector[index] = value;
     }
+    
+    public double getWeightDeltaAt(int index){
+        return weightDeltaVector[index];
+    }
+    
+    public void setWeightDelta(int index, double value){
+        weightDeltaVector[index] = value;
+    }    
     
     public double getOutput(){
         return output;
@@ -95,6 +105,8 @@ public class Neuron {
 
     //the last position in the array is used to store the bias
     private double[] weightVector;
+    //used to accumulate weight changes until they are applied
+    private double[] weightDeltaVector;
     //store neuron output to facilitate some training algorithms
     private double output;
     private IFunction activationFunction;

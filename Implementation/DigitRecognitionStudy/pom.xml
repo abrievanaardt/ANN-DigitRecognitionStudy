@@ -16,7 +16,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>ac.up.cos711.digitrecognitionstudy.experiment.Test</mainClass>
+                            <mainClass>ac.up.cos711.digitrecognitionstudy.experiment.Study</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

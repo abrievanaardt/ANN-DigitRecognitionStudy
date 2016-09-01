@@ -5,6 +5,10 @@ import ac.up.cos711.digitrecognitionstudy.data.Pattern;
 import ac.up.cos711.digitrecognitionstudy.function.util.UnequalArgsDimensionException;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.IFFNeuralNet;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.Neuron;
+import ac.up.cos711.digitrecognitionstudy.neuralnet.metric.ClassificationAccuracy;
+import ac.up.cos711.digitrecognitionstudy.neuralnet.metric.DefaultNetworkError;
+import ac.up.cos711.digitrecognitionstudy.neuralnet.metric.INetworkError;
+import ac.up.cos711.digitrecognitionstudy.neuralnet.util.ThresholdOutOfBoundsException;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.util.UnequalInputWeightException;
 import java.util.Iterator;
 import java.util.Random;
@@ -14,93 +18,139 @@ import java.util.logging.Logger;
 /**
  * Implements the BackPropogation algorithm, assuming the Sigmoid activation
  * function for hidden and output nodes. It is important that the dataset be
- * normalized for the active domain of Sigmoid. Both inputs and outputs alike.
- * Total network error is normalized over the output nodes and patterns in the
- * dataset to a value in the range [0,1).
+ * normalized for the active domain of Sigmoid.
  *
  * @author Abrie van Aardt
  */
 public class BackPropogation implements IFFNeuralNetTrainer {
 
-    
-    //TODO: PLEASE MAKE USE OF ONE OF THE STANDARD ERROR FUNCTIONS!!!!
-    //TODO: maybe make use of an x-Squared Error function to decide when to stop
     public BackPropogation() {
-        errorDelta = 0.1;//todo: find good value
-        learningRate = 0.01;//todo: find good value
+        ACCEPTABLE_TRAINING_ERROR = 0.1;//todo: find good value
+        LEARNING_RATE = 0.01;//todo: find good value
+        BIN_SIZE = 10;//10 for MNIST data
+        MAX_EPOCH = 15;
+        defaultNetworError = new DefaultNetworkError();
+        classificationAccuracy = new ClassificationAccuracy();
     }
 
-    public BackPropogation(double _errorDelta, double _learningRate) {
-        errorDelta = _errorDelta;
-        learningRate = _learningRate;
+    /**
+     *
+     * @param _acceptableTError
+     * @param _learningRate
+     * @param _binSize
+     * @param _classificationRigor
+     * @throws ThresholdOutOfBoundsException
+     */
+    public BackPropogation(double _acceptableTError, double _learningRate, int _binSize, double _classificationRigor, int _maxEpoch)
+            throws ThresholdOutOfBoundsException {
+        ACCEPTABLE_TRAINING_ERROR = _acceptableTError;
+        LEARNING_RATE = _learningRate;
+        BIN_SIZE = _binSize;
+        MAX_EPOCH = _maxEpoch;
+        defaultNetworError = new DefaultNetworkError();
+        classificationAccuracy = new ClassificationAccuracy(_classificationRigor);
     }
 
     @Override
-    public void train(IFFNeuralNet network, Dataset dataset)
+    public void train(IFFNeuralNet network, Dataset trainingset, Dataset validationset)
             throws UnequalInputWeightException, UnequalArgsDimensionException {
 
         Logger.getLogger(getClass().getName())
                 .log(Level.INFO, "Started neural network training...");
 
         initialise(network);
-        double networkError;
-        double[] outputs;
+
+        double trainingError;
+        double prevAvg;
+        double avgValidationError = 0;
+        double validationError = 0;
+        double devValidationError = 0;
+        double stdDevValidationError = 0;
+        double[] outputs = new double[1];
         double[] targets;
-        double[] errors;
+
         int epoch = 0;
+        int patternNumber = 1;
         long duration = System.nanoTime();
 
         do {
-            //prevent memorisation of pattern order
-            dataset.shuffle();
-            Iterator<Pattern> patterns = dataset.iterator();
-            networkError = 0;
-
-            while (patterns.hasNext()) {
-
-                Pattern p = patterns.next();
-                outputs = network.classify(p.getInputs());
-
-                //calculate the error for each output node
-                errors = new double[outputs.length];
-                targets = p.getTargets();
-                for (int i = 0; i < outputs.length; i++) {
-                    errors[i] = targets[i] - outputs[i];
-                    //update total network error (implies accuracy)   
-                    networkError += Math.abs(errors[i]) / (0.9 * errors.length);
-                }
-
-                backPropogateError(network, errors, outputs);
-            }
-
-            //normalize the network error
-            networkError /= dataset.size();//range [0,1)   
-            
             ++epoch;
+            
+            //prevent memorisation of pattern order
+            trainingset.shuffle();
+            Iterator<Pattern> patterns = trainingset.iterator();
+            trainingError = 0;            
+            patternNumber = 1;
+            
+            while (patterns.hasNext()) {
+                Pattern p = patterns.next();
+                targets = p.getTargets();
+                outputs = network.classify(p.getInputs());
+                trainingError += DefaultNetworkError.errorForPattern(targets, outputs);
+                backPropogateError(network, targets, outputs);
+                if (patternNumber % BIN_SIZE == 0)
+                    triggerWeightUpdates(network);
+                ++patternNumber;
+            }
+            
+            //if last few patterns did not fill a bin, trigger a weight update
+            if (trainingset.size() % BIN_SIZE != 0)
+                triggerWeightUpdates(network);
+            
+            trainingError /= (trainingset.size() * outputs.length);
+            
+            //calculate running average of validation and standard deviation
+            prevAvg = avgValidationError;
+            validationError = defaultNetworError.measure(network, validationset);
+            avgValidationError += (validationError - avgValidationError)/epoch;
+            devValidationError += (validationError - avgValidationError) * (validationError - prevAvg);            
+            stdDevValidationError = Math.sqrt(devValidationError/epoch);       
+            
+            Logger.getLogger(getClass().getName())
+                .log(Level.FINER, "Epoch {0}: E_t = {1}, E_v = {2}, E_v` = {3}, stdDev(E_v) = {4}",
+                        new Object[]{
+                            epoch,                            
+                            trainingError,
+                            validationError,
+                            avgValidationError,
+                            stdDevValidationError
+                        }
+                );
         }
-        while (networkError > errorDelta);
-        
+        while (trainingError > ACCEPTABLE_TRAINING_ERROR 
+                && (validationError <= (avgValidationError + stdDevValidationError))
+                && epoch < MAX_EPOCH);
+
         duration = System.nanoTime() - duration;
 
         Logger.getLogger(getClass().getName())
                 .log(Level.INFO, "Training completed in {0} epoch(s) ({1}s) with "
-                        + "acceptable classification error of {2}.",
+                        + " E_t = {2}, E_v = {3}.",
                         new Object[]{
                             epoch,
-                            duration/1000000000,
-                            networkError
+                            duration / 1000000000,
+                            trainingError,
+                            validationError
                         }
                 );
     }
-
-    private void backPropogateError(IFFNeuralNet network, double[] errors, double[] outputs) {
+    
+    public double getValidationError(){
+        return validationError;        
+    }
+    
+    public double getTrainingError(){
+        return trainingError;
+    }
+    
+    private void backPropogateError(IFFNeuralNet network, double[] targets, double[] outputs) {
         //obtain neurons
         Neuron[][] layers = network.getNetworkLayers();
 
         //calculate error signals from output nodes
-        double[] errorSignals = new double[errors.length];
-        for (int i = 0; i < errors.length; i++) {
-            errorSignals[i] = -errors[i] * (1 - outputs[i]) * outputs[i];
+        double[] errorSignals = new double[outputs.length];
+        for (int i = 0; i < outputs.length; i++) {
+            errorSignals[i] = -(targets[i] - outputs[i]) * (1 - outputs[i]) * outputs[i];
         }
 
         int biasIndex;
@@ -115,12 +165,12 @@ public class BackPropogation implements IFFNeuralNetTrainer {
             for (int j = 0; j < layers[i].length; j++) {
                 //adjust all weights excluding the bias
                 for (int k = 0; k < layers[i][j].getWeightCount() - 1; k++) {
-                    updateWeight(layers, errorSignals, i, j, k, WeightType.NORMAL);
+                    accumulateWeightDelta(layers, errorSignals, i, j, k, WeightType.NORMAL);
                     updateErrorSignal(layers, newErrorSignals, errorSignals, i, j, k);
                 }
                 //now adjust the bias weight
                 biasIndex = layers[i][j].getWeightCount() - 1;
-                updateWeight(layers, errorSignals, i, j, biasIndex, WeightType.BIAS);
+                accumulateWeightDelta(layers, errorSignals, i, j, biasIndex, WeightType.BIAS);
             }
 
             //update error signals to be used for the next layer
@@ -129,22 +179,41 @@ public class BackPropogation implements IFFNeuralNetTrainer {
 
     }
 
-    private void updateWeight(Neuron[][] layers, double[] errorSignals, int i, int j, int k, WeightType type) {
-        double oldWeight;
-        double newWeight;
-        oldWeight = layers[i][j].getWeightAt(k);
-        newWeight = -learningRate * errorSignals[j];
+    private void triggerWeightUpdates(IFFNeuralNet network) {
+        //obtain neurons
+        Neuron[][] layers = network.getNetworkLayers();
+
+        //update each weight in the network with its corresponding delta
+        //that was accumulated over BIN_SIZE times
+        for (int i = 1; i < layers.length; i++) {
+            for (int j = 0; j < layers[i].length; j++) {
+                for (int k = 0; k < layers[i][j].getWeightCount(); k++) {
+                    layers[i][j].setWeight(k,
+                            layers[i][j].getWeightAt(k)
+                            + layers[i][j].getWeightDeltaAt(k));
+                    //reset weight delta for future use
+                    layers[i][j].setWeightDelta(k, 0);
+                }
+            }
+        }
+    }
+
+    private void accumulateWeightDelta(Neuron[][] layers, double[] errorSignals, int i, int j, int k, WeightType type) {
+        double oldWeightDelta;
+        double newWeightDelta;
+        oldWeightDelta = layers[i][j].getWeightDeltaAt(k);
+        newWeightDelta = -LEARNING_RATE * errorSignals[j];
 
         if (type == WeightType.NORMAL) {
-            newWeight *= layers[i - 1][k].getOutput();//input for weight_k
+            newWeightDelta *= layers[i - 1][k].getOutput();//input for weight_k
         }
         else if (type == WeightType.BIAS) {
-            newWeight *= -1;//input = -1 for bias            
+            newWeightDelta *= -1;//input = -1 for bias            
         }
 
-        newWeight += oldWeight;
+        newWeightDelta += oldWeightDelta;
 
-        layers[i][j].setWeight(k, newWeight);
+        layers[i][j].setWeightDelta(k, newWeightDelta);
     }
 
     private void updateErrorSignal(Neuron[][] layers, double[] newErrorSignals, double[] errorSignals, int i, int j, int k) {
@@ -175,10 +244,16 @@ public class BackPropogation implements IFFNeuralNetTrainer {
         }
     }
 
-    private Random rand = new Random(System.nanoTime());
-    private double errorDelta;
-    private double learningRate;
-
+    private final Random rand = new Random(System.nanoTime());
+    private final INetworkError defaultNetworError;
+    private final INetworkError classificationAccuracy;//todo: could decide to use this as stopping condition
+    private final double ACCEPTABLE_TRAINING_ERROR;
+    private final double LEARNING_RATE;
+    private final int BIN_SIZE;
+    private final int MAX_EPOCH;
+    private double trainingError;
+    private double validationError;
+    
     private enum WeightType {
         BIAS, NORMAL
     };
