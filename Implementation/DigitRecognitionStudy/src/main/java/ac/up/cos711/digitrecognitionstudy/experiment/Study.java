@@ -14,15 +14,12 @@ import ac.up.cos711.digitrecognitionstudy.function.util.UnequalArgsDimensionExce
 import ac.up.cos711.digitrecognitionstudy.neuralnet.IFFNeuralNet;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.metric.ClassificationAccuracy;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.metric.DefaultNetworkError;
-import ac.up.cos711.digitrecognitionstudy.neuralnet.training.BackPropogation;
+import ac.up.cos711.digitrecognitionstudy.neuralnet.training.BackPropagation;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.util.FFNeuralNetBuilder;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.util.ThresholdOutOfBoundsException;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.util.UnequalInputWeightException;
 import ac.up.cos711.digitrecognitionstudy.neuralnet.util.ZeroNeuronException;
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.Scanner;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
@@ -67,7 +64,7 @@ public class Study {
 
         String expName = "Exp_All_Inputs";
         StudyConfig config;
-        BackPropogation backPropagation;
+        BackPropagation backPropagation;
 
         try {
             config = StudyConfig.fromFile(expName);
@@ -96,7 +93,7 @@ public class Study {
                         .addLayer(trainingset.getTargetCount(), Sigmoid.class)
                         .build();
 
-                backPropagation = new BackPropogation(
+                backPropagation = new BackPropagation(
                         config.acceptableTrainingError,
                         config.learningRate,
                         config.binSize,
@@ -136,7 +133,7 @@ public class Study {
 
         String expName = "Exp_Preprocessed";
         StudyConfig config;
-        BackPropogation backPropagation;
+        BackPropagation backPropagation;
         try {
             config = StudyConfig.fromFile(expName);
 
@@ -165,7 +162,7 @@ public class Study {
                         .addLayer(trainingset.getTargetCount(), Sigmoid.class)
                         .build();
 
-                backPropagation = new BackPropogation(
+                backPropagation = new BackPropagation(
                         config.acceptableTrainingError,
                         config.learningRate,
                         config.binSize,
@@ -204,7 +201,7 @@ public class Study {
                 .log(Level.INFO, "============ SOM ============");
 //        String expName = "Exp_SOM";
 //        StudyConfig config;
-//        BackPropogation backPropagation;
+//        BackPropagation backPropagation;
 //        try {
 //            config = StudyConfig.fromFile(expName);
 
