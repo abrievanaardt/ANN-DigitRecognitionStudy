@@ -60,12 +60,11 @@ public class BackPropogation implements IFFNeuralNetTrainer {
 
         initialise(network);
 
-        double trainingError;
         double prevAvg;
         double avgValidationError = 0;
-        double validationError = 0;
         double devValidationError = 0;
         double stdDevValidationError = 0;
+        validationError = 0;
         double[] outputs = new double[1];
         double[] targets;
 
@@ -121,7 +120,7 @@ public class BackPropogation implements IFFNeuralNetTrainer {
                 && (validationError <= (avgValidationError + stdDevValidationError))
                 && epoch < MAX_EPOCH);
 
-        duration = System.nanoTime() - duration;
+        duration = System.nanoTime() - duration;      
 
         Logger.getLogger(getClass().getName())
                 .log(Level.INFO, "Training completed in {0} epoch(s) ({1}s) with "

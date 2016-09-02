@@ -21,12 +21,7 @@ import java.util.logging.Logger;
  */
 public class Dataset implements Iterable {
 
-    /**
-     * A dataset object can only be instantiated via a call to the static
-     * {@link Dataset#fromFile(java.lang.String)} method, or a call to
-     * {@link Dataset#split(double)} on an existing Dataset object.
-     */
-    private Dataset() {
+    public Dataset() {
     }
 
     /**
@@ -147,6 +142,40 @@ public class Dataset implements Iterable {
 
     public int getTargetCount() {
         return targetCount;
+    }
+    
+    public void setInputCount(int count){
+        inputCount = count;
+    }
+    
+    public void setTargetCount(int count){
+        targetCount = count;
+    }
+    
+    public Pattern getPatternAt(int index){
+        Pattern p = data.get(index);
+        
+        Pattern copy = new Pattern();
+        copy.setInputs(p.getInputs());
+        copy.setTargets(p.getTargets());
+        
+        return copy;
+    }
+    
+    public void setPattern(int index, Pattern p){
+        Pattern copy = new Pattern();
+        copy.setInputs(p.getInputs());
+        copy.setTargets(p.getTargets());
+        
+        data.set(index, copy);
+    }
+    
+    public void addPattern(Pattern p){
+        Pattern copy = new Pattern();
+        copy.setInputs(p.getInputs());
+        copy.setTargets(p.getTargets());
+        
+        data.add(copy);
     }
 
     private static double scale(int input) {        
