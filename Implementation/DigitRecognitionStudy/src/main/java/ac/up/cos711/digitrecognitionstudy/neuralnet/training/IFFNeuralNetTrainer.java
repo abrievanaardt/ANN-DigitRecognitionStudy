@@ -23,9 +23,10 @@ public interface IFFNeuralNetTrainer{
      * </pre> on a {@link Dataset} object in client code.
      * @param network
      * @param dataset
+     * @param validationset
      * @throws UnequalInputWeightException
      * @throws UnequalArgsDimensionException 
      */
-    public void train(IFFNeuralNet network, Dataset dataset)
+    public void train(IFFNeuralNet network, Dataset dataset, Dataset validationset)
             throws UnequalInputWeightException, UnequalArgsDimensionException;
 }

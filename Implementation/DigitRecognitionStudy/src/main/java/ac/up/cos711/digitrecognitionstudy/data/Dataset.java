@@ -2,11 +2,9 @@ package ac.up.cos711.digitrecognitionstudy.data;
 
 import ac.up.cos711.digitrecognitionstudy.data.util.IncorrectFileFormatException;
 import ac.up.cos711.digitrecognitionstudy.data.util.TrainingTestingTuple;
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -16,26 +14,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Class representing a dataset for neural network training. This class is also
- * used by functions deriving from {@link NetworkError} for the purpose of
- * providing sample data to quantify network classification error.
- * 
- * Target values are scaled to 0.1 and 0.9, instead of 0 and 1
- * Inputs are scaled to [-1, 1]
+ * Class representing a dataset for neural network training. Target values 
+ * are scaled to 0.1 and 0.9, instead of 0 and 1. Inputs are scaled to [-1, 1]
  *
  * @author Abrie van Aardt
  */
 public class Dataset implements Iterable {
 
-    /**
-     * A dataset object can only be instantiated via a call to the static
-     * {@link Dataset#fromFile(java.lang.String)} method, or a call to
-     * {@link Dataset#split(double)} on an existing Dataset object.
-     */
-    private Dataset() {
+    public Dataset() {
     }
 
-    //TODO: scale data to range [-root(3), root(3)]
     /**
      *
      *
@@ -119,10 +107,8 @@ public class Dataset implements Iterable {
         Dataset testing = new Dataset();
 
         training.inputCount = inputCount;
-        training.hiddenCount = hiddenCount;
         training.targetCount = targetCount;
         testing.inputCount = inputCount;
-        testing.hiddenCount = hiddenCount;
         testing.targetCount = targetCount;
 
         int trainingUpperIndex = (int) (trainingRatio * data.size());
@@ -132,7 +118,7 @@ public class Dataset implements Iterable {
 
         logger.log(Level.INFO, "Using {0}"
                 + "% of the patterns for training and the remainder for "
-                + "testing generalisation.", String.format("%.2f", trainingRatio * 100));
+                + "validation.", String.format("%.2f", trainingRatio * 100));
 
         return new TrainingTestingTuple(training, testing);
     }
@@ -157,15 +143,42 @@ public class Dataset implements Iterable {
     public int getTargetCount() {
         return targetCount;
     }
-
-    public int getHiddenCount() {
-        return hiddenCount;
+    
+    public void setInputCount(int count){
+        inputCount = count;
+    }
+    
+    public void setTargetCount(int count){
+        targetCount = count;
+    }
+    
+    public Pattern getPatternAt(int index){
+        Pattern p = data.get(index);
+        
+        Pattern copy = new Pattern();
+        copy.setInputs(p.getInputs());
+        copy.setTargets(p.getTargets());
+        
+        return copy;
+    }
+    
+    public void setPattern(int index, Pattern p){
+        Pattern copy = new Pattern();
+        copy.setInputs(p.getInputs());
+        copy.setTargets(p.getTargets());
+        
+        data.set(index, copy);
+    }
+    
+    public void addPattern(Pattern p){
+        Pattern copy = new Pattern();
+        copy.setInputs(p.getInputs());
+        copy.setTargets(p.getTargets());
+        
+        data.add(copy);
     }
 
-    private static double scale(int input) {
-        int x;
-        if (input != 0)
-            x= 4;
+    private static double scale(int input) {        
         return (input / 255.0) * 2.0 - 1.0;
     }
 
@@ -179,14 +192,9 @@ public class Dataset implements Iterable {
         return targets;
     }
 
-    private static final int TARGET_COUNT = 10;//10 digits to classify
-    private static final int HIDDEN_COUNT = 300;//todo: check references for optimal #input nodes
-    
     private List<Pattern> data = new ArrayList<>();
     private int inputCount;
-    private int hiddenCount = HIDDEN_COUNT;
-    private int targetCount = TARGET_COUNT;
-
+    private int targetCount = 10;//10 digits to classify
     private Random random = new Random(System.nanoTime());
     private Logger logger = Logger.getLogger(getClass().getName());
 }
